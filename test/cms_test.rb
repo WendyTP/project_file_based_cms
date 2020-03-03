@@ -28,4 +28,16 @@ class CmsTest < Minitest::Test
     assert_includes(last_response.body, "Ruby 1.0 released.")
   end
 
+  def test_document_not_found
+    get "/notafile.txt"
+    assert_equal(302, last_response.status)
+
+    get last_response["Location"]
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "notafile.txt does not exist.")
+
+    get "/"
+    assert_equal(200, last_response.status)
+    refute_includes(last_response.body, "notafile.txt does not exist.")
+  end
 end

@@ -2,7 +2,13 @@ require "sinatra"
 require "sinatra/reloader"
 require "tilt/erubis"
 
+configure do
+  enable :sessions
+  set :session_secret, "secret"
+end
+
 root = File.expand_path("..", __FILE__)
+
 
 
 get "/" do
@@ -14,10 +20,18 @@ get "/" do
 end
 
 get "/:filename" do
-  headers["Content-Type"] = "text/plain"
+  @files = Dir.glob(root + "/data/*").map do |path|
+    File.basename(path)
+  end
 
-  file_path = "#{root}" + "/data/#{params[:filename]}"
-  @content = File.read(file_path)
+  if @files.include?(params[:filename])
+    headers["Content-Type"] = "text/plain"
 
-  #erb :file, layout: :layout
+    file_path = "#{root}" + "/data/#{params[:filename]}"
+    File.read(file_path)
+  else
+    session[:error] = "#{params[:filename]} does not exist."
+    redirect "/"
+  end
+
 end

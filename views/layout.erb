@@ -1,0 +1,12 @@
+<html>
+<head>
+</head>
+<body>
+  <% if session[:error] %>
+    <p><%= session.delete(:error) %></p>
+  <% end %>
+  <main>
+  <%= yield %>
+  </main>
+</body>
+</html>
