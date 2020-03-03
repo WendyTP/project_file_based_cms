@@ -10,5 +10,14 @@ get "/" do
     File.basename(path)
   end
 
-  erb :index
+  erb :index, layout: :layout
+end
+
+get "/:filename" do
+  headers["Content-Type"] = "text/plain"
+
+  file_path = "#{root}" + "/data/#{params[:filename]}"
+  @content = File.read(file_path)
+
+  #erb :file, layout: :layout
 end
