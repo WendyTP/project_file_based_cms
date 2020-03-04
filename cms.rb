@@ -27,10 +27,10 @@ def load_file_content(file)
     render_markdown(file_content)
   end
 end
-
  
 root = File.expand_path("..", __FILE__)
 
+# view a list of all exisiting documents
 get "/" do
   @files =  Dir.glob(root + "/data/*").map do |path|
     File.basename(path)
@@ -39,6 +39,7 @@ get "/" do
   erb :index, layout: :layout
 end
 
+# view a single document
 get "/:filename" do
   file_path = "#{root}" + "/data/#{params[:filename]}"
 
@@ -49,3 +50,25 @@ get "/:filename" do
     redirect "/"
   end
 end
+
+# Render an edit form for an existing document
+get "/:filename/edit" do
+  file_path = "#{root}" + "/data/#{params[:filename]}"
+  @file_content = File.read(file_path)
+  @file_name = params[:filename]
+
+  erb :edit_file , layout: :layout
+end
+
+# update an existing document
+post "/:filename" do
+  file_name = params[:filename]
+  file_path = "#{root}" + "/data/#{params[:filename]}"
+  updated_content = params[:document_content]
+
+  IO.write(file_path, updated_content)
+
+  session[:success] = "#{file_name} has been updated."
+  redirect "/"
+end
+
