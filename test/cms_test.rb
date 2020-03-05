@@ -38,6 +38,43 @@ class CmsTest < Minitest::Test
     assert_includes(last_response.body, "changes.txt")
   end
 
+  def test_creating_new_file
+    get "/files/new"
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "Add a new file:")
+    assert_includes(last_response.body, %q(<button type="submit"))
+    assert_includes(last_response.body, "Create")
+  end
+
+  def test_post_new_file
+    post"/files/create",  new_file: "test.txt"
+    assert_equal(302, last_response.status)
+
+    get last_response["Location"]
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "test.txt")
+    assert_includes(last_response.body, "test.txt was created.")
+
+    get "/"
+    assert_equal(200, last_response.status)
+    refute_includes(last_response.body, "test.txt was created.")
+
+  end
+
+  def test_post_new_file_with_empty_name
+    post "/files/create", new_file: ""
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "A name is required.")
+    assert_includes(last_response.body, "Add a new file:")
+  end
+
+  def test_post_new_file_with_no_file_extention
+     post "/files/create", new_file: "something"
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "File name needs to end with .txt or .md")
+    assert_includes(last_response.body, "Add a new file:")
+  end
+
   def test_viewing_text_document
     create_document("history.txt", "Ruby 1.0 released.")
 
@@ -97,5 +134,6 @@ class CmsTest < Minitest::Test
     get "/changes.txt"
     assert_equal(200, last_response.status)
     assert_includes(last_response.body, "new content")
-  end  
+  end
 end
+

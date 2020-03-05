@@ -10,10 +10,9 @@ configure do
   set :session_secret, "secret"
 end
 
-
 def render_markdown(text)
   markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
-  markdown.render(text)
+  markdown.render(text)       # convert Markdown text to HTML
 end
 
 def load_file_content(file_path)
@@ -24,7 +23,7 @@ def load_file_content(file_path)
     headers["Content-Type"] = "text/plain"
     file_content
   when ".md"
-    erb render_markdown(file_content)
+    erb render_markdown(file_content), layout: :layout
   end
 end
 
@@ -36,6 +35,7 @@ def data_path
   end
 end
 
+
 # view a list of all exisiting documents
 get "/" do
   pattern = File.join(data_path, "*")
@@ -43,7 +43,7 @@ get "/" do
     File.basename(path)
   end
 
-  erb :index, layout: :layout
+  erb :files, layout: :layout
 end
 
 # view a single document
@@ -70,7 +70,7 @@ end
 # update an existing document
 post "/:filename" do
   file_name = params[:filename]
-  file_path = File.join(data_path, params[:filename])
+  file_path = File.join(data_path, file_name)
   updated_content = params[:document_content]
 
   IO.write(file_path, updated_content)
@@ -79,3 +79,34 @@ post "/:filename" do
   redirect "/"
 end
 
+# Render the new document form
+get "/files/new" do
+  
+  erb :new_file, layout: :layout
+end
+
+def error_for_file_name(file_name)
+  if file_name.empty?
+    "A name is required."
+  elsif ![".txt", ".md"].include?(File.extname(file_name))
+    "File name needs to end with .txt or .md"
+  end
+end
+# Create a new document
+post "/files/create" do
+  file_name = params[:new_file].strip
+
+  error = error_for_file_name(file_name)
+  if error
+    session[:error] = error
+    erb :new_file, layout: :layout
+
+  else
+    file_path = File.join(data_path, file_name)
+    File.open(file_path, "w")
+
+    session[:success] = "#{file_name} was created."
+    redirect "/"
+  end
+
+end
