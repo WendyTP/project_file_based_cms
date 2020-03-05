@@ -47,7 +47,7 @@ class CmsTest < Minitest::Test
   end
 
   def test_post_new_file
-    post"/files/create",  new_file_name: "test.txt"
+    post"/files/create",  new_filename: "test.txt"
     assert_equal(302, last_response.status)
 
     get last_response["Location"]
@@ -61,20 +61,20 @@ class CmsTest < Minitest::Test
   end
 
   def test_post_new_file_with_empty_name
-    post "/files/create", new_file_name: ""
+    post "/files/create", new_filename: ""
     assert_equal(422, last_response.status)
     assert_includes(last_response.body, "A name is required.")
     assert_includes(last_response.body, "Add a new file:")
   end
 
   def test_post_new_file_with_no_file_extention
-     post "/files/create", new_file_name: "something"
+     post "/files/create", new_filename: "something"
     assert_equal(422, last_response.status)
     assert_includes(last_response.body, "File name needs to end with .txt or .md")
     assert_includes(last_response.body, "Add a new file:")
   end
 
-  def test_viewing_text_document
+  def test_viewing_single_document
     create_document("history.txt", "Ruby 1.0 released.")
 
     get "/history.txt"
@@ -118,7 +118,6 @@ class CmsTest < Minitest::Test
   def test_post_updated_document
     create_document("changes.txt", "This is old content.")
 
-
     post "/changes.txt", document_content: "new content"
     assert_equal(302, last_response.status)
     
@@ -133,6 +132,21 @@ class CmsTest < Minitest::Test
     get "/changes.txt"
     assert_equal(200, last_response.status)
     assert_includes(last_response.body, "new content")
+  end
+
+  def test_delete_existing_document
+    create_document("testing.txt")
+
+    post "/testing.txt/delete"
+    assert_equal(302, last_response.status)
+
+    get last_response["Location"]
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "testing.txt was deleted.")
+
+    get "/"
+    assert_equal(200, last_response.status)
+    refute_includes(last_response.body, "testing.txt")
   end
 end
 

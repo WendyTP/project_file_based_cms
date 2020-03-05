@@ -12,3 +12,7 @@ body {
   background: yellow;
   padding: 1px;
 }
+
+form.inline {
+  display: inline;
+}

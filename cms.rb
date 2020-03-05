@@ -35,6 +35,13 @@ def data_path
   end
 end
 
+def error_for_file_name(filename)
+  if filename.empty?
+    "A name is required."
+  elsif ![".txt", ".md"].include?(File.extname(filename))
+    "File name needs to end with .txt or .md"
+  end
+end
 
 # view a list of all exisiting documents
 get "/" do
@@ -62,20 +69,20 @@ end
 get "/:filename/edit" do
   file_path = File.join(data_path, params[:filename])
   @file_content = File.read(file_path)
-  @file_name = params[:filename]
+  @filename = params[:filename]
 
   erb :edit_file , layout: :layout
 end
 
 # update an existing document
 post "/:filename" do
-  file_name = params[:filename]
-  file_path = File.join(data_path, file_name)
+  filename = params[:filename]
+  file_path = File.join(data_path, filename)
   updated_content = params[:document_content]
 
   IO.write(file_path, updated_content)
 
-  session[:success] = "#{file_name} has been updated."
+  session[:success] = "#{filename} has been updated."
   redirect "/"
 end
 
@@ -85,29 +92,30 @@ get "/files/new" do
   erb :new_file, layout: :layout
 end
 
-def error_for_file_name(file_name)
-  if file_name.empty?
-    "A name is required."
-  elsif ![".txt", ".md"].include?(File.extname(file_name))
-    "File name needs to end with .txt or .md"
-  end
-end
 # Create a new document
 post "/files/create" do
-  file_name = params[:new_file_name].strip
+  filename = params[:new_filename].strip
 
-  error = error_for_file_name(file_name)
+  error = error_for_file_name(filename)
   if error
     session[:error] = error
     status 422
     erb :new_file, layout: :layout
 
   else
-    file_path = File.join(data_path, file_name)
+    file_path = File.join(data_path, filename)
     File.open(file_path, "w")
 
-    session[:success] = "#{file_name} was created."
+    session[:success] = "#{filename} was created."
     redirect "/"
   end
-
 end
+
+# Delete an exisiting document
+post "/:filename/delete" do
+  filename = params[:filename]
+  File.delete(File.join(data_path, filename))
+  session[:success] = "#{filename} was deleted."
+  redirect "/"
+end
+
