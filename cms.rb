@@ -94,11 +94,12 @@ def error_for_file_name(file_name)
 end
 # Create a new document
 post "/files/create" do
-  file_name = params[:new_file].strip
+  file_name = params[:new_file_name].strip
 
   error = error_for_file_name(file_name)
   if error
     session[:error] = error
+    status 422
     erb :new_file, layout: :layout
 
   else
