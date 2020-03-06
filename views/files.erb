@@ -16,7 +16,7 @@
   <% if session[:username] %>
     <form class="inline" action="/users/signout", method="post">
       <p class="user-status">
-        Signed in as admin.
+        Signed in as <%= session[:username] %>.
         <button type="submit"> Sign out</button>
       </p>
     </form>

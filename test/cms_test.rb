@@ -27,6 +27,10 @@ class CmsTest < Minitest::Test
     end
   end
 
+  def session
+    last_request.env["rack.session"]
+  end
+
   def test_index
     create_document("about.md")
     create_document("changes.txt")
@@ -36,42 +40,6 @@ class CmsTest < Minitest::Test
     assert_equal("text/html;charset=utf-8", last_response["Content-Type"])
     assert_includes(last_response.body, "about.md")
     assert_includes(last_response.body, "changes.txt")
-  end
-
-  def test_view_new_file_form
-    get "/files/new"
-    assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "Add a new file:")
-    assert_includes(last_response.body, %q(<button type="submit"))
-    assert_includes(last_response.body, "Create")
-  end
-
-  def test_post_new_file
-    post"/files/create",  new_filename: "test.txt"
-    assert_equal(302, last_response.status)
-
-    get last_response["Location"]
-    assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "test.txt was created.")
-
-    get "/"
-    assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "test.txt")
-    refute_includes(last_response.body, "test.txt was created.")
-  end
-
-  def test_post_new_file_with_empty_name
-    post "/files/create", new_filename: ""
-    assert_equal(422, last_response.status)
-    assert_includes(last_response.body, "A name is required.")
-    assert_includes(last_response.body, "Add a new file:")
-  end
-
-  def test_post_new_file_with_no_file_extention
-     post "/files/create", new_filename: "something"
-    assert_equal(422, last_response.status)
-    assert_includes(last_response.body, "File name needs to end with .txt or .md")
-    assert_includes(last_response.body, "Add a new file:")
   end
 
   def test_viewing_single_document
@@ -86,10 +54,9 @@ class CmsTest < Minitest::Test
   def test_document_not_found
     get "/notafile.txt"
     assert_equal(302, last_response.status)
+    assert_equal("notafile.txt does not exist.", session[:error])
 
     get last_response["Location"]
-    assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "notafile.txt does not exist.")
 
     get "/"
     assert_equal(200, last_response.status)
@@ -120,14 +87,7 @@ class CmsTest < Minitest::Test
 
     post "/changes.txt", document_content: "new content"
     assert_equal(302, last_response.status)
-    
-    get last_response["Location"]
-    assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "changes.txt has been updated.")
-
-    get "/"
-    assert_equal(200, last_response.status)
-    refute_includes(last_response.body, "changes.txt has been updated.")
+    assert_equal("changes.txt has been updated.", session[:success])
 
     get "/changes.txt"
     assert_equal(200, last_response.status)
@@ -139,15 +99,44 @@ class CmsTest < Minitest::Test
 
     post "/testing.txt/delete"
     assert_equal(302, last_response.status)
-
-    get last_response["Location"]
-    assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "testing.txt was deleted.")
+    assert_equal("testing.txt was deleted.", session[:success])
 
     get "/"
     assert_equal(200, last_response.status)
-    refute_includes(last_response.body, "testing.txt")
+    refute_includes(last_response.body, %q(href=/testing.txt))
   end
+
+   def test_view_new_file_form
+    get "/files/new"
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "Add a new file:")
+    assert_includes(last_response.body, %q(<button type="submit"))
+    assert_includes(last_response.body, "Create")
+  end
+
+  def test_post_new_file
+    post"/files/create",  new_filename: "test.txt"
+    assert_equal(302, last_response.status)
+    assert_equal("test.txt was created.", session[:success])
+
+    get "/"
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "test.txt")
+  end
+
+  def test_post_new_file_with_empty_name
+    post "/files/create", new_filename: ""
+    assert_equal(422, last_response.status)
+    assert_includes(last_response.body, "A name is required")
+    assert_includes(last_response.body, "Add a new file:")
+  end
+
+  def test_post_new_file_with_no_file_extention
+    post "/files/create", new_filename: "something"
+   assert_equal(422, last_response.status)
+   assert_includes(last_response.body, "File name needs to end with .txt or .md")
+   assert_includes(last_response.body, "Add a new file:")
+ end
 
   def test_render_signin_form
     get "/users/signin"
@@ -159,12 +148,13 @@ class CmsTest < Minitest::Test
   def test_submit_success_signin_form
     post "/users/signin",  username: "admin", password: "secret"
     assert_equal(302, last_response.status)
+    assert_equal("Welcome!", session[:success])
+    assert_equal("admin", session[:username])
   
     get last_response["Location"]
     assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "Welcome!")
-    #assert_includes(last_response.body, "Signed in as admin.")
-    #assert_includes(last_response.body, %q(<button type="submit">Sign Out))
+    assert_includes(last_response.body, "Signed in as admin.")
+    assert_includes(last_response.body, %q(<button type="submit"))
     
     get "/"
     refute_includes(last_response.body, "Welcome!")
@@ -174,20 +164,21 @@ class CmsTest < Minitest::Test
     post "/users/signin",  username: "something", password: "else"
     assert_equal(422, last_response.status)
     assert_includes(last_response.body, "Invalid Credentials")
+    assert_nil(session[:username])
   end
 
   def test_user_signout
-    post "/users/signin",  username: "admin", password: "secret"
-    get last_response["Location"]
-    assert_includes(last_response.body, "Welcome!")
+    get "/", {}, {"rack.session" => {username: "admin"}}
+    assert_includes(last_response.body, "Signed in as admin.")
 
     post "/users/signout"
     assert_equal(302, last_response.status)
+    assert_equal("You have been signed out.", session[:success])
 
     get last_response["Location"]
     assert_equal(200, last_response.status)
-    assert_includes(last_response.body, "You have been signed out.")
     assert_includes(last_response.body, "Sign in")
+    assert_nil(session[:username])
   end
 end
 
