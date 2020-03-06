@@ -13,12 +13,13 @@
     <% end %>
   </ul>
 
-  <% if signed_in? %>
-    <i>Signed in as admin.</i>
+  <% if session[:username] %>
     <form class="inline" action="/users/signout", method="post">
-      <button type="submit"> Sign out</button>
+      <p class="user-status">
+        Signed in as admin.
+        <button type="submit"> Sign out</button>
+      </p>
     </form>
   <% else %>
-    <form action="/users/signin" method="get">
-      <button stype="submit">Sign in</button>
+    <p class="user-status"><a href="/users/signin">Sign in</a></p>
   <% end %>

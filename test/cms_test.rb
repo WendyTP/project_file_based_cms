@@ -27,7 +27,6 @@ class CmsTest < Minitest::Test
     end
   end
 
-=begin
   def test_index
     create_document("about.md")
     create_document("changes.txt")
@@ -149,7 +148,6 @@ class CmsTest < Minitest::Test
     assert_equal(200, last_response.status)
     refute_includes(last_response.body, "testing.txt")
   end
-=end
 
   def test_render_signin_form
     get "/users/signin"

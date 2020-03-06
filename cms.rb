@@ -10,11 +10,6 @@ configure do
   set :session_secret, "secret"
 end
 
-helpers do
-  def signed_in?
-    session.has_key?(:username)
-  end
-end
 
 def render_markdown(text)
   markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
@@ -46,6 +41,12 @@ def error_for_file_name(filename)
     "A name is required."
   elsif ![".txt", ".md"].include?(File.extname(filename))
     "File name needs to end with .txt or .md"
+  end
+end
+
+def invalid_credentials?(username, password)
+  unless username == "admin" && password == "secret"
+    "Invalid Credentials"
   end
 end
 
@@ -128,12 +129,6 @@ end
 # Render the sign in form
 get "/users/signin" do
   erb :signin, layout: :layout
-end
-
-def invalid_credentials?(username, password)
-  unless username == "admin" && password == "secret"
-    "Invalid Credentials"
-  end
 end
 
 # Submit the sign in form
