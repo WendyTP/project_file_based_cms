@@ -12,3 +12,13 @@
       </li>
     <% end %>
   </ul>
+
+  <% if signed_in? %>
+    <i>Signed in as admin.</i>
+    <form class="inline" action="/users/signout", method="post">
+      <button type="submit"> Sign out</button>
+    </form>
+  <% else %>
+    <form action="/users/signin" method="get">
+      <button stype="submit">Sign in</button>
+  <% end %>

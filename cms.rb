@@ -10,6 +10,12 @@ configure do
   set :session_secret, "secret"
 end
 
+helpers do
+  def signed_in?
+    session.has_key?(:username)
+  end
+end
+
 def render_markdown(text)
   markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
   markdown.render(text)       # convert Markdown text to HTML
@@ -118,4 +124,41 @@ post "/:filename/delete" do
   session[:success] = "#{filename} was deleted."
   redirect "/"
 end
+
+# Render the sign in form
+get "/users/signin" do
+  erb :signin, layout: :layout
+end
+
+def invalid_credentials?(username, password)
+  unless username == "admin" && password == "secret"
+    "Invalid Credentials"
+  end
+end
+
+# Submit the sign in form
+post "/users/signin" do
+  username = params[:username]
+  password = params[:password]
+
+  error = invalid_credentials?(username, password)
+  if error
+    session[:error] = error
+    status 422
+    erb :signin, layout: :layout
+  else
+    session[:username] = username
+    session[:success] = "Welcome!"
+    redirect "/"
+  end
+end
+
+# Sign out 
+post "/users/signout" do
+  session.delete(:username)
+  session[:success] = "You have been signed out."
+  redirect "/"
+end
+
+
 

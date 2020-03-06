@@ -27,6 +27,7 @@ class CmsTest < Minitest::Test
     end
   end
 
+=begin
   def test_index
     create_document("about.md")
     create_document("changes.txt")
@@ -148,5 +149,48 @@ class CmsTest < Minitest::Test
     assert_equal(200, last_response.status)
     refute_includes(last_response.body, "testing.txt")
   end
+=end
+
+  def test_render_signin_form
+    get "/users/signin"
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "Username:")
+    assert_includes(last_response.body, %q(<button type="submit"))
+  end
+
+  def test_submit_success_signin_form
+    post "/users/signin",  username: "admin", password: "secret"
+    assert_equal(302, last_response.status)
+  
+    get last_response["Location"]
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "Welcome!")
+    #assert_includes(last_response.body, "Signed in as admin.")
+    #assert_includes(last_response.body, %q(<button type="submit">Sign Out))
+    
+    get "/"
+    refute_includes(last_response.body, "Welcome!")
+  end
+
+  def test_submit_invalid_credentials
+    post "/users/signin",  username: "something", password: "else"
+    assert_equal(422, last_response.status)
+    assert_includes(last_response.body, "Invalid Credentials")
+  end
+
+  def test_user_signout
+    post "/users/signin",  username: "admin", password: "secret"
+    get last_response["Location"]
+    assert_includes(last_response.body, "Welcome!")
+
+    post "/users/signout"
+    assert_equal(302, last_response.status)
+
+    get last_response["Location"]
+    assert_equal(200, last_response.status)
+    assert_includes(last_response.body, "You have been signed out.")
+    assert_includes(last_response.body, "Sign in")
+  end
 end
+
 
