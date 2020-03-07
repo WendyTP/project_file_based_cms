@@ -9,6 +9,8 @@ require_relative "../cms"
 class CmsTest < Minitest::Test
   include Rack::Test::Methods
 
+  # This method is required for using methods of Rack::Test::Methods
+  # return an instance of a Rack app when called. 
   def app
     Sinatra::Application
   end
@@ -27,8 +29,14 @@ class CmsTest < Minitest::Test
     end
   end
 
+  # to retrieve data stored in session
   def session
     last_request.env["rack.session"]
+  end
+
+  # to add username "admin" to session
+  def admin_session
+    {"rack.session" => {username: "admin"}}
   end
 
   def test_index
@@ -75,17 +83,25 @@ class CmsTest < Minitest::Test
   def test_editing_document
     create_document("changes.txt")
 
-    get "/changes.txt/edit"
+    get "/changes.txt/edit", {}, admin_session
     assert_equal(200, last_response.status)
     assert_equal("text/html;charset=utf-8", last_response["Content-Type"])
     assert_includes(last_response.body, "<textarea")
     assert_includes(last_response.body, %q(<button type="submit"))
   end
 
+  def test_editing_document_signed_out
+    create_document("changes.txt")
+
+    get "/changes.txt/edit"
+    assert_equal(302, last_response.status)
+    assert_equal("You must be signed in to do that.", session[:error])
+  end
+
   def test_post_updated_document
     create_document("changes.txt", "This is old content.")
 
-    post "/changes.txt", document_content: "new content"
+    post "/changes.txt", {document_content: "new content"}, admin_session
     assert_equal(302, last_response.status)
     assert_equal("changes.txt has been updated.", session[:success])
 
@@ -94,28 +110,50 @@ class CmsTest < Minitest::Test
     assert_includes(last_response.body, "new content")
   end
 
+  def test_post_updated_document_signed_out
+    create_document("changes.txt", "This is old content.")
+
+    post "/changes.txt", {document_content: "new content"}
+    assert_equal(302, last_response.status)
+    assert_equal("You must be signed in to do that.", session[:error])
+  end
+
   def test_delete_existing_document
     create_document("testing.txt")
 
-    post "/testing.txt/delete"
+    post "/testing.txt/delete", {}, admin_session
     assert_equal(302, last_response.status)
     assert_equal("testing.txt was deleted.", session[:success])
 
     get "/"
     assert_equal(200, last_response.status)
-    refute_includes(last_response.body, %q(href=/testing.txt))
+    refute_includes(last_response.body, %q(href="/testing.txt"))
+  end
+
+  def test_delete_existing_document_signed_out
+    create_document("testing.txt")
+
+    post "/testing.txt/delete"
+    assert_equal(302, last_response.status)
+    assert_equal("You must be signed in to do that.", session[:error])
   end
 
    def test_view_new_file_form
-    get "/files/new"
+    get "/files/new", {}, admin_session
     assert_equal(200, last_response.status)
     assert_includes(last_response.body, "Add a new file:")
     assert_includes(last_response.body, %q(<button type="submit"))
     assert_includes(last_response.body, "Create")
   end
 
+  def test_view_new_file_form_signed_out
+    get "/files/new"
+    assert_equal(302, last_response.status)
+    assert_equal("You must be signed in to do that.", session[:error])
+  end
+
   def test_post_new_file
-    post"/files/create",  new_filename: "test.txt"
+    post"/files/create", {new_filename: "test.txt"}, admin_session
     assert_equal(302, last_response.status)
     assert_equal("test.txt was created.", session[:success])
 
@@ -124,15 +162,21 @@ class CmsTest < Minitest::Test
     assert_includes(last_response.body, "test.txt")
   end
 
+  def test_post_new_file_signed_out
+    post"/files/create", {new_filename: "test.txt"}
+    assert_equal(302, last_response.status)
+    assert_equal("You must be signed in to do that.", session[:error])
+  end
+
   def test_post_new_file_with_empty_name
-    post "/files/create", new_filename: ""
+    post "/files/create", {new_filename: ""}, admin_session
     assert_equal(422, last_response.status)
     assert_includes(last_response.body, "A name is required")
     assert_includes(last_response.body, "Add a new file:")
   end
 
   def test_post_new_file_with_no_file_extention
-    post "/files/create", new_filename: "something"
+    post "/files/create", {new_filename: "something"}, admin_session
    assert_equal(422, last_response.status)
    assert_includes(last_response.body, "File name needs to end with .txt or .md")
    assert_includes(last_response.body, "Add a new file:")

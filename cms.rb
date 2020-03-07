@@ -50,6 +50,18 @@ def invalid_credentials?(username, password)
   end
 end
 
+def signed_in?
+  session.has_key?(:username)
+end
+
+def require_signed_in_user
+  unless signed_in?
+    session[:error] = "You must be signed in to do that."
+    redirect "/"
+  end
+end
+  
+
 # view a list of all exisiting documents
 get "/" do
   pattern = File.join(data_path, "*")
@@ -74,6 +86,7 @@ end
 
 # Render an edit form for an existing document
 get "/:filename/edit" do
+  require_signed_in_user
   file_path = File.join(data_path, params[:filename])
   @file_content = File.read(file_path)
   @filename = params[:filename]
@@ -83,6 +96,7 @@ end
 
 # update an existing document
 post "/:filename" do
+  require_signed_in_user
   filename = params[:filename]
   file_path = File.join(data_path, filename)
   updated_content = params[:document_content]
@@ -95,12 +109,13 @@ end
 
 # Render the new document form
 get "/files/new" do
-  
+  require_signed_in_user
   erb :new_file, layout: :layout
 end
 
 # Create a new document
 post "/files/create" do
+  require_signed_in_user
   filename = params[:new_filename].strip
 
   error = error_for_file_name(filename)
@@ -120,6 +135,7 @@ end
 
 # Delete an exisiting document
 post "/:filename/delete" do
+  require_signed_in_user
   filename = params[:filename]
   File.delete(File.join(data_path, filename))
   session[:success] = "#{filename} was deleted."
