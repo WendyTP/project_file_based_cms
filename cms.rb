@@ -3,6 +3,7 @@ require "sinatra"
 require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
+require "yaml"
 
 
 configure do
@@ -36,6 +37,16 @@ def data_path
   end
 end
 
+def load_user_credentials
+  if ENV["RACK_ENV"] == "test"
+    file_path = File.expand_path("../test/users.yml", __FILE__)
+  else
+    file_path = File.expand_path("../users.yml", __FILE__)
+  end
+  YAML.load_file(file_path)
+end
+
+
 def error_for_file_name(filename)
   if filename.empty?
     "A name is required."
@@ -45,7 +56,8 @@ def error_for_file_name(filename)
 end
 
 def invalid_credentials?(username, password)
-  unless username == "admin" && password == "secret"
+  user_credentials = load_user_credentials
+  unless user_credentials.has_key?(username) && user_credentials[username] == password
     "Invalid Credentials"
   end
 end

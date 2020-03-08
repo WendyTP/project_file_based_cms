@@ -3,6 +3,7 @@ ENV["RACK_ENV"] = "test"
 require "minitest/autorun"
 require "rack/test"
 require "fileutils"
+require "yaml"
 
 require_relative "../cms"
 
@@ -224,6 +225,7 @@ class CmsTest < Minitest::Test
     assert_includes(last_response.body, "Sign in")
     assert_nil(session[:username])
   end
+  
 end
 
 
