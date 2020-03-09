@@ -4,6 +4,7 @@ require "sinatra/reloader"
 require "tilt/erubis"
 require "redcarpet"
 require "yaml"
+require "bcrypt"
 
 
 configure do
@@ -55,9 +56,14 @@ def error_for_file_name(filename)
   end
 end
 
+def correct_password?(password, encrypted_password)
+  BCrypt::Password.new(encrypted_password) == password
+end
+
 def invalid_credentials?(username, password)
   user_credentials = load_user_credentials
-  unless user_credentials.has_key?(username) && user_credentials[username] == password
+  encrypted_password = user_credentials[username]
+  unless user_credentials.has_key?(username) && correct_password?(password, encrypted_password)
     "Invalid Credentials"
   end
 end

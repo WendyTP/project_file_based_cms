@@ -1,5 +1,5 @@
 {
-  admin: "secret",
-  chef: "cuisine",
-  painter: "paint"
+  admin: $2a$12$IJKLdQkM/h7LJoYK4IKhSe25lSJF1O9IM/1CBCtd2XlN.V0eYIUvC,
+  chef: $2a$12$VmxPbsqWlmP0OFt0EvXgVeaCbORr99fsmQ2dThxt16PMvGjbZTuJe,
+  painter: $2a$12$6xo1RuQcBusgy2xc6082LOq8elS28jojuVYXkK6idN2mW29MoLkVm
 }
