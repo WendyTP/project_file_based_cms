@@ -183,6 +183,13 @@ class CmsTest < Minitest::Test
    assert_includes(last_response.body, "Add a new file:")
  end
 
+ def test_post_new_file_with_duplicated_filename
+  create_document("changes.txt")
+  post"/files/create", {new_filename: "changes.txt"}, admin_session
+  assert_equal(422, last_response.status)
+  assert_includes(last_response.body, "changes.txt already exisits.")
+end 
+
   def test_render_signin_form
     get "/users/signin"
     assert_equal(200, last_response.status)
@@ -225,6 +232,37 @@ class CmsTest < Minitest::Test
     assert_includes(last_response.body, "Sign in")
     assert_nil(session[:username])
   end
+  
+  def test_duplicating_document
+    create_document("changes.txt", "new content")
+
+    post "/changes.txt/duplicate", {}, admin_session
+    assert_equal(302, last_response.status)
+    assert_equal("Duplication succeeded! You can change the name of the file.", session[:success])
+
+    get last_response["Location"]
+    assert_includes(last_response.body, "changes_copy.txt")
+  end
+
+  def test_update_filename
+    create_document("changes.txt")
+
+    post "/changes.txt/edit_filename", {new_filename: "testing.txt"}, admin_session
+    assert_equal(302, last_response.status)
+    assert_equal("Filename is updated", session[:success])
+
+    get last_response["Location"]
+    assert_includes(last_response.body, "testing.txt")
+  end
+
+  def test_update_filename_with_empty_name
+    create_document("changes.txt")
+
+    post "/changes.txt/edit_filename", {new_filename: ""}, admin_session
+    assert_equal(422, last_response.status)
+    assert_includes(last_response.body, "A name is required" )
+  end
+
   
 end
 

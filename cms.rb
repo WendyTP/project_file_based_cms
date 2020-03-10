@@ -12,10 +12,17 @@ configure do
   set :session_secret, "secret"
 end
 
-
+# convert Markdown text to HTML
 def render_markdown(text)
   markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML)
-  markdown.render(text)       # convert Markdown text to HTML
+  markdown.render(text)
+end
+
+def current_files_list
+  pattern = File.join(data_path, "*")
+  @files =  Dir.glob(pattern).map do |path|
+    File.basename(path)
+  end
 end
 
 def load_file_content(file_path)
@@ -56,6 +63,10 @@ def error_for_file_name(filename)
   end
 end
 
+def filename_exist?(filename)
+  current_files_list.include?(filename)
+end
+
 def correct_password?(password, encrypted_password)
   BCrypt::Password.new(encrypted_password) == password
 end
@@ -82,11 +93,8 @@ end
 
 # view a list of all exisiting documents
 get "/" do
-  pattern = File.join(data_path, "*")
-  @files =  Dir.glob(pattern).map do |path|
-    File.basename(path)
-  end
-
+  @files = current_files_list
+  
   erb :files, layout: :layout
 end
 
@@ -112,17 +120,53 @@ get "/:filename/edit" do
   erb :edit_file , layout: :layout
 end
 
-# update an existing document
+# update an existing document content
 post "/:filename" do
   require_signed_in_user
   filename = params[:filename]
-  file_path = File.join(data_path, filename)
-  updated_content = params[:document_content]
+ 
+    file_path = File.join(data_path, filename)
+    updated_content = params[:document_content]
 
-  IO.write(file_path, updated_content)
+    IO.write(file_path, updated_content)
 
-  session[:success] = "#{filename} has been updated."
-  redirect "/"
+    session[:success] = "#{filename} has been updated."
+    redirect "/"
+end
+
+# render edit-filename form
+get "/:filename/edit_filename" do
+  require_signed_in_user
+  file_path = File.join(data_path, params[:filename])
+  @filename = params[:filename]
+
+  erb :edit_filename , layout: :layout
+end
+
+# update exisitng filename
+post "/:filename/edit_filename" do
+  require_signed_in_user
+  current_file_path = File.join(data_path, params[:filename])
+  file_content = File.read(current_file_path)
+  @filename = params[:filename]
+
+  new_filename = params[:new_filename].strip
+
+  error = error_for_file_name(new_filename)
+  if error
+    session[:error] = error
+    status 422
+    erb :edit_filename, layout: :layout
+  elsif filename_exist?(new_filename)
+    session[:error] = "#{new_filename} already exisits."
+    status 422
+    erb :edit_filename, layout: :layout
+  else
+    new_file_path = File.join(data_path, new_filename)
+    File.rename(current_file_path, new_file_path)
+    session[:success] = "Filename is updated"
+    redirect "/"
+  end
 end
 
 # Render the new document form
@@ -141,7 +185,10 @@ post "/files/create" do
     session[:error] = error
     status 422
     erb :new_file, layout: :layout
-
+  elsif filename_exist?(filename)
+    session[:error] = "#{filename} already exisits."
+    status 422
+    erb :new_file, layout: :layout
   else
     file_path = File.join(data_path, filename)
     File.open(file_path, "w")
@@ -188,6 +235,25 @@ post "/users/signout" do
   session[:success] = "You have been signed out."
   redirect "/"
 end
+
+# duplicate existing document
+post "/:filename/duplicate" do
+  require_signed_in_user
+  file_path = File.join(data_path,params[:filename]) # ../data/changes.txt
+  @content = File.read(file_path)
+
+  file_directory = File.dirname(file_path)   # ../data
+  filename_no_extention = File.basename(file_path, ".*") # "changes"
+  file_extention = File.extname(file_path)     # ".txt"
+  
+  new_file_path = File.join(file_directory, "#{filename_no_extention}_copy#{file_extention}") # "../data/changes_copy.txt"
+  
+  IO.write(new_file_path, @content)
+  session[:success] = "Duplication succeeded! You can change the name of the file."
+  redirect "/#{File.basename(new_file_path)}/edit_filename"   # "/changes_copy.txt/edit"
+end
+
+
 
 
 
