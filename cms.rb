@@ -45,15 +45,24 @@ def data_path
   end
 end
 
-def load_user_credentials
+def user_credentials_path
   if ENV["RACK_ENV"] == "test"
     file_path = File.expand_path("../test/users.yml", __FILE__)
   else
     file_path = File.expand_path("../users.yml", __FILE__)
   end
+end
+
+def load_user_credentials
+  file_path = user_credentials_path
   YAML.load_file(file_path)
 end
 
+def store_user_credentials(username, password)
+  user_credentials = load_user_credentials
+  user_credentials[username] = password
+  File.write(user_credentials_path, user_credentials.to_yaml)
+end
 
 def error_for_file_name(filename)
   if filename.empty?
@@ -205,6 +214,40 @@ post "/:filename/delete" do
   File.delete(File.join(data_path, filename))
   session[:success] = "#{filename} was deleted."
   redirect "/"
+end
+
+# Render sign up form
+get "/users/signup" do
+  erb :signup, layout: :layout
+end
+
+# Submit sign up form
+post "/users/signup" do
+  username = params[:username]
+  password = params[:password]
+=begin
+  username_error = invalid_username?(username)
+  password_error = invalid_password?(password)
+  if username_error
+    session[:error] = username_error
+    status 422
+    erb :signup, layout: :layout
+  elsif password_error
+    session[:error] = password_error
+    status 422
+    erb :signup, layout: :layout
+  else
+=end
+    encrypted_password = BCrypt::Password.create(password).to_s
+    store_user_credentials(username, encrypted_password)
+    # add new user to users.yml
+    #YAML::dump({username: BCrypt::Password.create(password)})
+    #user_credentials[username] = BCrypt::Password.create(password)
+    # sign in user
+    session[:success] = "Sign up succeeded! Welcome!"
+    redirect "/"
+  #end
+
 end
 
 # Render the sign in form

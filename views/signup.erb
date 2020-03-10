@@ -1,0 +1,20 @@
+<form action="/users/signup" method="post">
+  <div>
+    <label for="username">Username:</label>
+    <input name="username" id="usernam" type="text" value=<%= params[:username]%>>
+  </div>
+
+  <div>
+    <em><p><small>Password should be 5 or more characters and does not include space characters.</small></p></em>
+    <label for="password">Password:</label>
+    <input name="password" id="password" type="password">
+  </div>
+
+  <div>
+    <em><p><small>Please re-confirm your password:</small></p></em>
+    <label for="reconfirmed_password"> Re-confirm Password:</label>
+    <input name="reconfirmed_password" id="reconfirmed_password" type="password">
+  </div>
+    </br>
+  <button type="submit">Sign up</button>
+</form>
