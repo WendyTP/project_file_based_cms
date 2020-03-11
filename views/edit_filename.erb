@@ -2,7 +2,9 @@
   <label for="new_filename">Edit filename of <%= @filename %>:</label>
   <div>
     <input name="new_filename" id="new_filename" type="text" value="<%= @filename || params[:new_filename] %>">
-  </div>
+  </div></br>
 
   <button type="submit">Save Changes</button>
 </form>
+
+<a href="/">Cancel</a>
