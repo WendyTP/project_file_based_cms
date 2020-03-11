@@ -37,6 +37,18 @@ def load_file_content(file_path)
   end
 end
 
+def error_for_file_name(filename)
+  if filename.empty?
+    "A name is required."
+  elsif ![".txt", ".md"].include?(File.extname(filename))
+    "File name needs to end with .txt or .md"
+  end
+end
+
+def filename_exist?(filename)
+  current_files_list.include?(filename)
+end
+
 def data_path
   if ENV["RACK_ENV"] == "test"
     File.expand_path("../test/data", __FILE__)
@@ -64,18 +76,6 @@ def store_user_credentials(username, password)
   File.write(user_credentials_path, user_credentials.to_yaml)
 end
 
-def error_for_file_name(filename)
-  if filename.empty?
-    "A name is required."
-  elsif ![".txt", ".md"].include?(File.extname(filename))
-    "File name needs to end with .txt or .md"
-  end
-end
-
-def filename_exist?(filename)
-  current_files_list.include?(filename)
-end
-
 def correct_password?(password, encrypted_password)
   BCrypt::Password.new(encrypted_password) == password
 end
@@ -96,6 +96,21 @@ def require_signed_in_user
   unless signed_in?
     session[:error] = "You must be signed in to do that."
     redirect "/"
+  end
+end
+
+def invalid_username(username)
+  user_credentials = load_user_credentials
+  if username.size == 0
+    "Username can not be empty."
+  elsif user_credentials.has_key?(username)
+    "Username already exists."
+  end
+end
+
+def invalid_password(password, reconfirmed_password)
+  unless password.match?(/\A\w{5,20}\z/) && password == reconfirmed_password
+    "password is invalid."
   end
 end
   
@@ -223,11 +238,12 @@ end
 
 # Submit sign up form
 post "/users/signup" do
-  username = params[:username]
-  password = params[:password]
-=begin
-  username_error = invalid_username?(username)
-  password_error = invalid_password?(password)
+  username = params[:username].strip
+  password = params[:password].strip
+  reconfirmed_password = params[:reconfirmed_password].strip
+
+  username_error = invalid_username(username)
+  password_error = invalid_password(password, reconfirmed_password)
   if username_error
     session[:error] = username_error
     status 422
@@ -237,17 +253,13 @@ post "/users/signup" do
     status 422
     erb :signup, layout: :layout
   else
-=end
     encrypted_password = BCrypt::Password.create(password).to_s
     store_user_credentials(username, encrypted_password)
-    # add new user to users.yml
-    #YAML::dump({username: BCrypt::Password.create(password)})
-    #user_credentials[username] = BCrypt::Password.create(password)
-    # sign in user
+
+    session[:username] = username
     session[:success] = "Sign up succeeded! Welcome!"
     redirect "/"
-  #end
-
+  end
 end
 
 # Render the sign in form

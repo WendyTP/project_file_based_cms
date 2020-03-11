@@ -269,6 +269,26 @@ end
     assert_includes(last_response.body, "Re-confirm Password:")
   end
 
+  def test_submit_signup_form
+    post "/users/signup",  username: "sunny", password: "rainbow", reconfirmed_password: "rainbow"
+    assert_equal(302, last_response.status)
+    assert_equal("Sign up succeeded! Welcome!", session[:success])
+
+    get last_response["Location"]
+    assert_includes(last_response.body, "Signed in as sunny.")
+  end
+
+  def test_empty_username_for_signup
+    post "/users/signup",  username: "", password: "chef", reconfirmed_password: "chef"
+    assert_equal(422, last_response.status)
+    assert_includes(last_response.body, "Username can not be empty.")
+  end
+
+  def test_invalid_password_for_signup
+    post "/users/signup", username: "john", password: "123er", reconfirmed_password: "123456"
+    assert_equal(422, last_response.status)
+    assert_includes(last_response.body, "password is invalid.")
+  end
   
 end
 
