@@ -100,21 +100,21 @@ class CmsTest < Minitest::Test
   end
 
   def test_post_updated_document
-    create_document("changes.txt", "This is old content.")
+    create_document("math.txt", "This is old content.")
 
-    post "/changes.txt", {document_content: "new content"}, admin_session
-    assert_equal(302, last_response.status)
-    assert_equal("changes.txt has been updated.", session[:success])
+    post "/math.txt/edit", {document_content: "new content"}, admin_session
+    #assert_equal(302, last_response.status)
+    assert_equal("math.txt has been updated.", session[:success])
 
-    get "/changes.txt"
+    get "/math.txt"
     assert_equal(200, last_response.status)
     assert_includes(last_response.body, "new content")
   end
 
   def test_post_updated_document_signed_out
-    create_document("changes.txt", "This is old content.")
+    create_document("testing.txt", "This is old content.")
 
-    post "/changes.txt", {document_content: "new content"}
+    post "/testing.txt/edit", {document_content: "new content"}
     assert_equal(302, last_response.status)
     assert_equal("You must be signed in to do that.", session[:error])
   end

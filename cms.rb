@@ -145,7 +145,7 @@ get "/:filename/edit" do
 end
 
 # update an existing document content
-post "/:filename" do
+post "/:filename/edit" do
   require_signed_in_user
   filename = params[:filename]
  
@@ -307,8 +307,3 @@ post "/:filename/duplicate" do
   session[:success] = "Duplication succeeded! You can change the name of the file."
   redirect "/#{File.basename(new_file_path)}/edit_filename"   # "/changes_copy.txt/edit"
 end
-
-
-
-
-
