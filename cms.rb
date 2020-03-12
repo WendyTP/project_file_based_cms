@@ -144,6 +144,7 @@ get "/:filename/edit" do
   erb :edit_file , layout: :layout
 end
 
+#<form action="/<%= @filename %>/edit" method="post">
 # update an existing document content
 post "/:filename/edit" do
   require_signed_in_user
