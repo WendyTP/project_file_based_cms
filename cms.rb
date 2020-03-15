@@ -5,6 +5,7 @@ require "tilt/erubis"
 require "redcarpet"
 require "yaml"
 require "bcrypt"
+require "fileutils"
 
 
 configure do
@@ -18,6 +19,14 @@ def render_markdown(text)
   markdown.render(text)
 end
 
+def data_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/data", __FILE__)
+  else
+    File.expand_path("../data", __FILE__)
+  end
+end
+
 def current_files_list
   pattern = File.join(data_path, "*")
   @files =  Dir.glob(pattern).map do |path|
@@ -25,8 +34,18 @@ def current_files_list
   end
 end
 
-def load_file_content(file_path)
-  file_content = File.read(file_path)
+# def latest_file_version
+
+# assign new version_id to file
+def next_version_id(file_path)
+  file_versions = Dir.children(file_path)
+  max_existing_version_id = file_versions.map(&:to_i).max || 0
+  max_existing_version_id + 1
+end
+
+# to change
+def load_file_content(file_path, version_id)
+  file_content = File.read(File.join(file_path, version_id.to_s))
 
   case File.extname(file_path)
   when ".txt"
@@ -47,14 +66,6 @@ end
 
 def filename_exist?(filename)
   current_files_list.include?(filename)
-end
-
-def data_path
-  if ENV["RACK_ENV"] == "test"
-    File.expand_path("../test/data", __FILE__)
-  else
-    File.expand_path("../data", __FILE__)
-  end
 end
 
 def user_credentials_path
@@ -122,18 +133,20 @@ get "/" do
   erb :files, layout: :layout
 end
 
+# to change
 # view a single document
 get "/:filename" do
   file_path = File.join(data_path, params[:filename])
 
   if File.exist?(file_path)
-    load_file_content(file_path)
+    load_file_content(file_path, 1)
   else
     session[:error] = "#{params[:filename]} does not exist."
     redirect "/"
   end
 end
 
+# to change
 # Render an edit form for an existing document
 get "/:filename/edit" do
   require_signed_in_user
@@ -144,7 +157,7 @@ get "/:filename/edit" do
   erb :edit_file , layout: :layout
 end
 
-#<form action="/<%= @filename %>/edit" method="post">
+# to change
 # update an existing document content
 post "/:filename/edit" do
   require_signed_in_user
@@ -159,6 +172,7 @@ post "/:filename/edit" do
     redirect "/"
 end
 
+# to change
 # render edit-filename form
 get "/:filename/edit_filename" do
   require_signed_in_user
@@ -168,6 +182,7 @@ get "/:filename/edit_filename" do
   erb :edit_filename , layout: :layout
 end
 
+# to change
 # update exisitng filename
 post "/:filename/edit_filename" do
   require_signed_in_user
@@ -215,14 +230,20 @@ post "/files/create" do
     status 422
     erb :new_file, layout: :layout
   else
-    file_path = File.join(data_path, filename)
-    File.open(file_path, "w")
-
+    file_path = File.join(data_path, filename) # return a string
+    file_directory = FileUtils.mkdir_p(file_path) # return an array
+  
+    version_id = next_version_id(file_path)
+    version_path = File.join(file_path, version_id.to_s)
+    
+    File.write(version_path, "This is default content.")
+    
     session[:success] = "#{filename} was created."
     redirect "/"
   end
 end
 
+# to change
 # Delete an exisiting document
 post "/:filename/delete" do
   require_signed_in_user
@@ -292,6 +313,7 @@ post "/users/signout" do
   redirect "/"
 end
 
+# to change
 # duplicate existing document
 post "/:filename/duplicate" do
   require_signed_in_user
