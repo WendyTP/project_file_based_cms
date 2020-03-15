@@ -67,7 +67,7 @@ class CmsTest < Minitest::Test
     assert_equal("text/plain", last_response["Content-Type"])
     assert_equal("This is default content.", last_response.body, )
   end
-=begin
+
   def test_document_not_found
     get "/notafile.txt"
     assert_equal(302, last_response.status)
@@ -88,7 +88,7 @@ class CmsTest < Minitest::Test
     assert_equal("text/html;charset=utf-8", last_response["Content-Type"])
     assert_includes(last_response.body, "<h1>Ruby is...</h1>" )
   end
-
+=begin
   def test_editing_document
     create_document("changes.txt")
 
@@ -126,7 +126,7 @@ class CmsTest < Minitest::Test
     assert_equal(302, last_response.status)
     assert_equal("You must be signed in to do that.", session[:error])
   end
-
+=end
   def test_delete_existing_document
     create_document("testing.txt")
 
@@ -146,7 +146,7 @@ class CmsTest < Minitest::Test
     assert_equal(302, last_response.status)
     assert_equal("You must be signed in to do that.", session[:error])
   end
-=end
+
    def test_view_new_file_form
     get "/files/new", {}, admin_session
     assert_equal(200, last_response.status)

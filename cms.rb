@@ -34,7 +34,16 @@ def current_files_list
   end
 end
 
-# def latest_file_version
+# get latest version id of a file
+def latest_file_version(file_path)
+  pattern = File.join(file_path, "*")
+  existing_versions = Dir.glob(pattern).map do |path|
+    File.basename(path)
+  end
+  existing_versions.map(&:to_i).max
+end
+
+
 
 # assign new version_id to file
 def next_version_id(file_path)
@@ -133,13 +142,13 @@ get "/" do
   erb :files, layout: :layout
 end
 
-# to change
 # view a single document
 get "/:filename" do
   file_path = File.join(data_path, params[:filename])
+  version_id = latest_file_version(file_path)
 
   if File.exist?(file_path)
-    load_file_content(file_path, 1)
+    load_file_content(file_path, version_id)
   else
     session[:error] = "#{params[:filename]} does not exist."
     redirect "/"
@@ -248,7 +257,7 @@ end
 post "/:filename/delete" do
   require_signed_in_user
   filename = params[:filename]
-  File.delete(File.join(data_path, filename))
+  FileUtils.rm_r(File.join(data_path, filename))
   session[:success] = "#{filename} was deleted."
   redirect "/"
 end
