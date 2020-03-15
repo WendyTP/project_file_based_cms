@@ -188,12 +188,11 @@ get "/:filename/edit_filename" do
   erb :edit_filename , layout: :layout
 end
 
-# to change
+
 # update exisitng filename
 post "/:filename/edit_filename" do
   require_signed_in_user
   current_file_path = File.join(data_path, params[:filename])
-  file_content = File.read(current_file_path)
   @filename = params[:filename]
 
   new_filename = params[:new_filename].strip
@@ -318,15 +317,10 @@ post "/users/signout" do
   redirect "/"
 end
 
-# to change
 # duplicate existing document
 post "/:filename/duplicate" do
   require_signed_in_user
   file_path = File.join(data_path,params[:filename]) # ../data/changes.txt
-  #version_id = latest_file_version(file_path)
-  #@content = load_file_content(file_path, version_id)
-  
- 
 
   file_directory = File.dirname(file_path)   # ../data
   filename_no_extention = File.basename(file_path, ".*") # "changes"
@@ -335,7 +329,6 @@ post "/:filename/duplicate" do
   new_file_path = File.join(file_directory, "#{filename_no_extention}_copy#{file_extention}") # "../data/changes_copy.txt"
   
   FileUtils.copy_entry(file_path, new_file_path )
-  #IO.write(new_file_path, @content)
   session[:success] = "Duplication succeeded! You can change the name of the file."
   redirect "/#{File.basename(new_file_path)}/edit_filename"   # "/changes_copy.txt/edit"
 end

@@ -252,7 +252,7 @@ end
     assert_includes(last_response.body, "changes_copy.txt")
   end
 
-=begin
+
   def test_update_filename
     create_document("changes.txt")
 
@@ -271,7 +271,7 @@ end
     assert_equal(422, last_response.status)
     assert_includes(last_response.body, "A name is required" )
   end
-
+=begin
   def test_render_signup_form
     get "/users/signup"
     assert_equal(200, last_response.status)
