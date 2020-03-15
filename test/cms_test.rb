@@ -190,14 +190,14 @@ class CmsTest < Minitest::Test
    assert_includes(last_response.body, "File name needs to end with .txt or .md")
    assert_includes(last_response.body, "Add a new file:")
  end
-=begin
+
  def test_post_new_file_with_duplicated_filename
   create_document("changes.txt")
   post"/files/create", {new_filename: "changes.txt"}, admin_session
   assert_equal(422, last_response.status)
   assert_includes(last_response.body, "changes.txt already exisits.")
 end 
-
+=begin
   def test_render_signin_form
     get "/users/signin"
     assert_equal(200, last_response.status)
@@ -240,7 +240,7 @@ end
     assert_includes(last_response.body, "Sign in")
     assert_nil(session[:username])
   end
-  
+=end  
   def test_duplicating_document
     create_document("changes.txt", "new content")
 
@@ -252,6 +252,7 @@ end
     assert_includes(last_response.body, "changes_copy.txt")
   end
 
+=begin
   def test_update_filename
     create_document("changes.txt")
 

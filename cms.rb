@@ -43,8 +43,6 @@ def latest_file_version(file_path)
   existing_versions.map(&:to_i).max
 end
 
-
-
 # assign new version_id to file
 def next_version_id(file_path)
   file_versions = Dir.children(file_path)
@@ -52,7 +50,6 @@ def next_version_id(file_path)
   max_existing_version_id + 1
 end
 
-# to change
 def load_file_content(file_path, version_id)
   file_content = File.read(File.join(file_path, version_id.to_s))
 
@@ -252,7 +249,6 @@ post "/files/create" do
   end
 end
 
-# to change
 # Delete an exisiting document
 post "/:filename/delete" do
   require_signed_in_user
@@ -327,7 +323,10 @@ end
 post "/:filename/duplicate" do
   require_signed_in_user
   file_path = File.join(data_path,params[:filename]) # ../data/changes.txt
-  @content = File.read(file_path)
+  #version_id = latest_file_version(file_path)
+  #@content = load_file_content(file_path, version_id)
+  
+ 
 
   file_directory = File.dirname(file_path)   # ../data
   filename_no_extention = File.basename(file_path, ".*") # "changes"
@@ -335,7 +334,8 @@ post "/:filename/duplicate" do
   
   new_file_path = File.join(file_directory, "#{filename_no_extention}_copy#{file_extention}") # "../data/changes_copy.txt"
   
-  IO.write(new_file_path, @content)
+  FileUtils.copy_entry(file_path, new_file_path )
+  #IO.write(new_file_path, @content)
   session[:success] = "Duplication succeeded! You can change the name of the file."
   redirect "/#{File.basename(new_file_path)}/edit_filename"   # "/changes_copy.txt/edit"
 end
