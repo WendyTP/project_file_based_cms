@@ -1,0 +1,14 @@
+
+
+<ul>
+<% @version_ids.each do |version| %>
+  <li>
+    <a href="/<%= @filename %>/versions/<%= version %>"><%= version %></a>
+
+    <form class="inline" action="/<%= @filename %>/<%= version %>/delete" method="post">
+       <button type="submit">Delete</button>
+    </form>
+  </li>
+
+<% end %>
+</ul>

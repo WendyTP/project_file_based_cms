@@ -163,10 +163,21 @@ get "/:filename" do
   end
 end
 
+# view list of versions of a single document
+get "/:filename/versions" do
+  require_signed_in_user
+
+  @filename = params[:filename]
+  file_path = File.join(data_path, @filename)
+  file_versions = Dir.children(file_path)
+  @version_ids = file_versions.map {|file| File.basename(file)}
+
+  erb :edit_versions, layout: :layout
+end
+
 # Render an edit form for an existing document
 get "/:filename/edit" do
   require_signed_in_user
-
   file_path = File.join(data_path, params[:filename])
   version_id = latest_file_version(file_path)
   version_path = get_version_path(file_path, version_id)  
@@ -178,7 +189,30 @@ get "/:filename/edit" do
   erb :edit_file , layout: :layout
 end
 
-# to change
+# view a single version of a document
+get "/:filename/versions/:version" do
+  require_signed_in_user
+  
+  file_path = File.join(data_path, params[:filename])
+  version_id = params[:version].split(".").first
+  load_file_content(file_path, version_id)
+end
+
+
+# Render an edit form for an existing document
+get "/:filename/edit" do
+  require_signed_in_user
+  file_path = File.join(data_path, params[:filename])
+  version_id = latest_file_version(file_path)
+  version_path = get_version_path(file_path, version_id)  
+
+  @file_content = File.read(version_path)
+
+  @filename = params[:filename]
+
+  erb :edit_file , layout: :layout
+end
+
 # update an existing document content
 post "/:filename/edit" do
   require_signed_in_user
@@ -200,13 +234,6 @@ post "/:filename/edit" do
     File.write(version_path, updated_content)
     session[:success] = "#{@filename} has been updated."
   end
-    
-  #filename = params[:filename]
-  #file_path = File.join(data_path, filename)
-  #updated_content = params[:document_content]
-  #IO.write(file_path, updated_content)
-
-  #session[:success] = "#{filename} has been updated."
   redirect "/"
 end
 
