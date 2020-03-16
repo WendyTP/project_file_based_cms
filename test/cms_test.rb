@@ -24,17 +24,14 @@ class CmsTest < Minitest::Test
   def teardown
     FileUtils.rm_rf(data_path)
   end
-
-  def create_file_directory(filename)
-    FileUtils.mkdir_p(File.join(data_path, filename))
-  end
     
 
   def create_document(filename, content="This is default content.", version=1)
-    create_file_directory(filename)
-    file_path = File.join(data_path, filename)
-    version_path = File.join(file_path, version.to_s)
-    
+    file_path = File.join(data_path, filename) # return a string
+    file_directory = FileUtils.mkdir_p(file_path) # return an array
+    file_extention = File.extname(file_path) # .txt or .md
+    version_path = File.join(file_path, "#{version}#{file_extention}")
+
     File.write(version_path, content)
   end
 
@@ -88,11 +85,11 @@ class CmsTest < Minitest::Test
     assert_equal("text/html;charset=utf-8", last_response["Content-Type"])
     assert_includes(last_response.body, "<h1>Ruby is...</h1>" )
   end
-=begin
-  def test_editing_document
-    create_document("changes.txt")
 
-    get "/changes.txt/edit", {}, admin_session
+  def test_editing_document
+    create_document("history.txt")
+
+    get "/history.txt/edit", {}, admin_session
     assert_equal(200, last_response.status)
     assert_equal("text/html;charset=utf-8", last_response["Content-Type"])
     assert_includes(last_response.body, "<textarea")
@@ -111,7 +108,7 @@ class CmsTest < Minitest::Test
     create_document("math.txt", "This is old content.")
 
     post "/math.txt/edit", {document_content: "new content"}, admin_session
-    #assert_equal(302, last_response.status)
+    assert_equal(302, last_response.status)
     assert_equal("math.txt has been updated.", session[:success])
 
     get "/math.txt"
@@ -126,7 +123,7 @@ class CmsTest < Minitest::Test
     assert_equal(302, last_response.status)
     assert_equal("You must be signed in to do that.", session[:error])
   end
-=end
+
   def test_delete_existing_document
     create_document("testing.txt")
 

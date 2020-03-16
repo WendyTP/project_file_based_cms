@@ -8,6 +8,7 @@ require "bcrypt"
 require "fileutils"
 
 
+
 configure do
   enable :sessions
   set :session_secret, "secret"
@@ -38,22 +39,32 @@ end
 def latest_file_version(file_path)
   pattern = File.join(file_path, "*")
   existing_versions = Dir.glob(pattern).map do |path|
-    File.basename(path)
+    File.basename(path, ".*")
   end
+
   existing_versions.map(&:to_i).max
 end
 
 # assign new version_id to file
 def next_version_id(file_path)
   file_versions = Dir.children(file_path)
-  max_existing_version_id = file_versions.map(&:to_i).max || 0
+  version_ids = file_versions.map {|file| File.basename(file, ".*")}
+  max_existing_version_id = version_ids.map(&:to_i).max || 0
   max_existing_version_id + 1
 end
 
-def load_file_content(file_path, version_id)
-  file_content = File.read(File.join(file_path, version_id.to_s))
+# get version path
+def get_version_path(file_path, version_id)
+  file_extention = File.extname(file_path) # .txt or .md
+  version_path = File.join(file_path, "#{version_id}#{file_extention}")
+end
 
-  case File.extname(file_path)
+def load_file_content(file_path, version_id)
+  version_path = get_version_path(file_path, version_id)
+    
+  file_content = File.read(version_path)
+
+  case File.extname(version_path)
   when ".txt"
     headers["Content-Type"] = "text/plain"
     file_content
@@ -152,12 +163,16 @@ get "/:filename" do
   end
 end
 
-# to change
 # Render an edit form for an existing document
 get "/:filename/edit" do
   require_signed_in_user
+
   file_path = File.join(data_path, params[:filename])
-  @file_content = File.read(file_path)
+  version_id = latest_file_version(file_path)
+  version_path = get_version_path(file_path, version_id)  
+
+  @file_content = File.read(version_path)
+
   @filename = params[:filename]
 
   erb :edit_file , layout: :layout
@@ -167,18 +182,34 @@ end
 # update an existing document content
 post "/:filename/edit" do
   require_signed_in_user
-  filename = params[:filename]
- 
-    file_path = File.join(data_path, filename)
-    updated_content = params[:document_content]
 
-    IO.write(file_path, updated_content)
+  @filename = params[:filename]
 
-    session[:success] = "#{filename} has been updated."
-    redirect "/"
+  file_path = File.join(data_path, @filename)
+  version_id = latest_file_version(file_path)
+  version_path = get_version_path(file_path, version_id)
+
+  before_update_content = File.read(version_path)
+  updated_content =  params[:document_content]
+
+  if before_update_content == updated_content
+    session[:success] = "No new update on #{@filename}."
+  else
+    next_version_id(file_path)
+    version_path = get_version_path(file_path, next_version_id(file_path))
+    File.write(version_path, updated_content)
+    session[:success] = "#{@filename} has been updated."
+  end
+    
+  #filename = params[:filename]
+  #file_path = File.join(data_path, filename)
+  #updated_content = params[:document_content]
+  #IO.write(file_path, updated_content)
+
+  #session[:success] = "#{filename} has been updated."
+  redirect "/"
 end
 
-# to change
 # render edit-filename form
 get "/:filename/edit_filename" do
   require_signed_in_user
@@ -237,9 +268,9 @@ post "/files/create" do
   else
     file_path = File.join(data_path, filename) # return a string
     file_directory = FileUtils.mkdir_p(file_path) # return an array
-  
+
     version_id = next_version_id(file_path)
-    version_path = File.join(file_path, version_id.to_s)
+    version_path = get_version_path(file_path, version_id) 
     
     File.write(version_path, "This is default content.")
     
@@ -320,8 +351,8 @@ end
 # duplicate existing document
 post "/:filename/duplicate" do
   require_signed_in_user
-  file_path = File.join(data_path,params[:filename]) # ../data/changes.txt
 
+  file_path = File.join(data_path,params[:filename]) # ../data/changes.txt
   file_directory = File.dirname(file_path)   # ../data
   filename_no_extention = File.basename(file_path, ".*") # "changes"
   file_extention = File.extname(file_path)     # ".txt"
